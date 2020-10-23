@@ -1,0 +1,861 @@
+ManagerController class
+
+package com.main.controller;
+
+import java.util.List;
+import java.util.Random;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import com.main.model.Admin;
+import com.main.model.Hanger;
+import com.main.model.Manager;
+import com.main.model.ManagerLogin;
+import com.main.model.Pilot;
+import com.main.model.Plane;
+import com.main.service.HangerService;
+import com.main.service.ManagerService;
+import com.main.service.PilotService;
+import com.main.service.PlaneService;
+
+/**
+ * @author dhana.lakshmir This is manager controller
+ *
+ */
+@Controller
+public class ManagerController {
+
+	private static Logger log = Logger.getLogger(ManagerController.class);
+	@Autowired
+	private ManagerService managerService;
+	@Autowired
+	private PlaneService planeService;
+	@Autowired
+	private PilotService pilotService;
+	@Autowired
+	private HangerService hangerService;
+
+	@RequestMapping(value = "/redirect", method = RequestMethod.GET)
+	public String welcome(ModelMap map) {
+		log.info("Request inside welcome page");
+		Manager manager = new Manager();
+		map.addAttribute("managerForm", manager);
+		return "Welcome";
+	}
+
+	@RequestMapping(value = "/saveManager", method = RequestMethod.POST)
+	public String saveManager(@Validated @ModelAttribute("managerForm") Manager manager, BindingResult result,
+			ModelMap map) {
+		String viewPage;
+		if (result.hasErrors()) {
+			log.info("Validation errors occured");
+			viewPage = "ManagerRegister";
+		} else {
+			log.info("Invoking saveManager method");
+			Random r = new Random();
+			int manid = r.nextInt(99999) + 10000;
+			manager.setManagerId(manid);
+			managerService.saveManager(manager);
+			List<Manager> manList = managerService.fetchManager();
+			map.addAttribute("managerList", manList);
+			map.addAttribute("loginForm", new ManagerLogin());
+			viewPage = "ManagerLogin";
+		}
+		return viewPage;
+	}
+
+	@RequestMapping(value = "/fetchManager", method = RequestMethod.GET)
+	public String managerRegistrationForm(ModelMap map) {
+		log.info("Request inside Registration Form method");
+		Manager manager = new Manager();
+		map.addAttribute("managerForm", manager);
+		return "ManagerRegister";
+	}
+
+	@RequestMapping("managerLogin")
+	public String managerLogin(Model model) {
+		log.info("Inside Manager Login page");
+		model.addAttribute("loginForm", new ManagerLogin());
+		return "ManagerLogin";
+
+	}
+
+	@RequestMapping("/doLogin")
+	public String login(@Validated @ModelAttribute("loginForm") ManagerLogin login, BindingResult result,
+			ModelMap map) {
+		if (!result.hasFieldErrors()) {
+			if (!managerService.authenticateUser(login)) {
+				result.addError(new ObjectError("err", "Invalid Credentials"));
+			} else {
+				return "ManagerSuccess";
+			}
+		}
+		return "ManagerSuccess";
+	}
+
+	@RequestMapping(value = "/login", method = RequestMethod.GET)
+	public String adminLogin(ModelMap map) {
+		log.info("Inside Login page");
+		Admin admin = new Admin();
+		map.addAttribute("adminForm", admin);
+		return "AdminLogin";
+
+	}
+
+	@RequestMapping(value = "/approveStatus", method = RequestMethod.POST)
+	public String loginProcess(@Validated @ModelAttribute("adminForm") Admin admin, BindingResult result,
+			ModelMap map) {
+		if (admin != null && admin.getUsername() != null & admin.getPassword() != null) {
+			if (admin.getUsername().equals("admin") && admin.getPassword().equals("admin")) {
+				map.addAttribute("msg", admin.getUsername());
+				return "AdminSuccess";
+			} else {
+				map.addAttribute("error", "Invalid Details");
+				return "AdminLogin";
+			}
+		} else {
+			map.addAttribute("error", "Please enter Details");
+			return "AdminLogin";
+		}
+	}
+
+	@RequestMapping(value = "/addPlane", method = RequestMethod.GET)
+	public String planeDetails(ModelMap map) {
+		log.info("Request inside add plane Form method");
+		Plane plane = new Plane();
+		map.addAttribute("planeForm", plane);
+		return "AddPlane";
+	}
+
+	@RequestMapping(value = "/savePlane", method = RequestMethod.POST)
+	public String savePlane(@Validated @ModelAttribute("planeForm") Plane plane, BindingResult result, ModelMap map) {
+		String viewPage;
+		if (result.hasErrors()) {
+			log.info("Validation errors occured");
+			viewPage = "AddPlane";
+		} else {
+			log.info("Invoking savePlane method");
+			Random r = new Random();
+			int planeid = r.nextInt(99999) + 10000;
+			plane.setPlaneid(planeid);
+			planeService.savePlane(plane);
+			List<Plane> pList = planeService.fetchPlane();
+			map.addAttribute("planeList", pList);
+			viewPage = "PlaneSuccess";
+		}
+		return viewPage;
+
+	}
+
+	@RequestMapping(value = "/addPilot", method = RequestMethod.GET)
+	public String pilotDetails(ModelMap map) {
+		log.info("Request inside add plane Form method");
+		Pilot pilot = new Pilot();
+		map.addAttribute("pilotForm", pilot);
+		return "AddPilot";
+	}
+
+	@RequestMapping(value = "/savePilot", method = RequestMethod.POST)
+	public String savePlane(@Validated @ModelAttribute("pilotForm") Pilot pilot, BindingResult result, ModelMap map) {
+		String viewPage;
+		if (result.hasErrors()) {
+			log.info("Validation errors occured");
+			viewPage = "AddPilot";
+		} else {
+			log.info("Invoking savePilot method");
+			Random r = new Random();
+			int pilotid = r.nextInt(99999) + 10000;
+			pilot.setPilotid(pilotid);
+			pilotService.savePilot(pilot);
+			List<Pilot> piList = pilotService.fetchPilot();
+			map.addAttribute("pilotList", piList);
+			viewPage = "PilotSuccess";
+		}
+		return viewPage;
+	}
+
+	@RequestMapping(value = "/addHanger", method = RequestMethod.GET)
+	public String hangertDetails(ModelMap map) {
+		log.info("Request inside hanger Form method");
+		Hanger hanger = new Hanger();
+		map.addAttribute("hangerForm", hanger);
+		return "AddHanger";
+	}
+
+	@RequestMapping(value = "/saveHanger", method = RequestMethod.POST)
+	public String savePlane(@Validated @ModelAttribute("hangerForm") Hanger hanger, BindingResult result,
+			ModelMap map) {
+		String viewPage;
+		if (result.hasErrors()) {
+			log.info("Validation errors occured");
+			viewPage = "AddHanger";
+		} else {
+			log.info("Invoking savePilot method");
+			Random r = new Random();
+			int hangerId = r.nextInt(99999) + 10000;
+			hanger.setHangerId(hangerId);
+			hanger.setStatus("Available");
+			hangerService.saveHanger(hanger);
+			List<Hanger> hList = hangerService.fetchHanger();
+			map.addAttribute("hangerList", hList);
+			viewPage = "HangerSuccess";
+		}
+		return viewPage;
+	}
+
+	@RequestMapping(value = "/fetchHanger", method = RequestMethod.GET)
+	public String hangerDetails(ModelMap map) {
+		log.info("Request inside hanger Form method");
+		List<Hanger> hList = hangerService.fetchHanger();
+		map.addAttribute("hangerList", hList);
+		return "HangerDetails";
+	}
+
+	@RequestMapping(value = "/fetchPilot", method = RequestMethod.GET)
+	public String pilot(ModelMap map) {
+		log.info("Request inside pilot details method");
+		List<Pilot> piList = pilotService.fetchPilot();
+		map.addAttribute("pilotList", piList);
+		return "PilotDetails";
+	}
+
+	@RequestMapping(value = "/fetchPlane", method = RequestMethod.GET)
+	public String plane(ModelMap map) {
+		log.info("Request inside plane details method");
+		List<Plane> pList = planeService.fetchPlane();
+		map.addAttribute("planeList", pList);
+		return "PlaneDetails";
+	}
+
+	@RequestMapping(value = "/update/{hangerId}")
+	public String update(@PathVariable("hangerId") Integer hangerId, ModelMap map) {
+		log.info("fetching hanger info by id");
+		Hanger hanger = hangerService.fetchHangerById(hangerId);
+		map.addAttribute("hangerForm", hanger);
+		return "HangerUpdate";
+	}
+
+	@RequestMapping(value = "/updateHanger", method = RequestMethod.POST)
+	public String updateHanger(@Validated @ModelAttribute("hangerForm") Hanger hanger, BindingResult result,
+			ModelMap map) {
+		String updatePage;
+		if (result.hasErrors()) {
+			log.info("validation error has occured");
+			updatePage = "HangerUpdate";
+		} else {
+			log.info("Invoking method to update data");
+			hangerService.updateHanger(hanger);
+			List<Hanger> hList = hangerService.fetchHanger();
+			map.addAttribute("hangerList", hList);
+			updatePage = "HangerSuccess";
+
+		}
+		return updatePage;
+	}
+
+	@RequestMapping(value = "/updatePilot/{pilotid}")
+	public String updatePilot(@PathVariable("pilotid") Integer pilotid, ModelMap map) {
+		log.info("fetching pilot info by id");
+		Pilot pilot = pilotService.fetchPilotById(pilotid);
+		map.addAttribute("pilotForm", pilot);
+		return "PilotUpdate";
+	}
+
+	@RequestMapping(value = "/editPilot", method = RequestMethod.POST)
+	public String editPilot(@Validated @ModelAttribute("pilotForm") Pilot pilot, BindingResult result, ModelMap map) {
+		String editViewPage;
+		if (result.hasErrors()) {
+			log.info("validation error has occured");
+			editViewPage = "PilotUpdate";
+		} else {
+			log.info("Invoking method to update data");
+			pilotService.updatePilot(pilot);
+			List<Pilot> pList = pilotService.fetchPilot();
+			map.addAttribute("PilotList", pList);
+			editViewPage = "PilotSuccess";
+
+		}
+		return editViewPage;
+	}
+
+	@RequestMapping(value = "/updatePlane/{planeid}")
+	public String updatePlane(@PathVariable("planeid") Integer planeid, ModelMap map) {
+		log.info("fetching info info by id");
+		Plane plane = planeService.fetchPlaneById(planeid);
+		map.addAttribute("planeForm", plane);
+		return "PlaneUpdate";
+	}
+
+	@RequestMapping(value = "/editPlane", method = RequestMethod.POST)
+	public String editPlane(@Validated @ModelAttribute("planeForm") Plane plane, BindingResult result, ModelMap map) {
+		String editViewPage;
+		if (result.hasErrors()) {
+			log.info("validation error has occured");
+			editViewPage = "PlaneUpdate";
+		} else {
+			log.info("Invoking method to update data");
+			planeService.updatePlane(plane);
+			List<Plane> pList = planeService.fetchPlane();
+			map.addAttribute("PlaneList", pList);
+			editViewPage = "PlaneSuccess";
+
+		}
+		return editViewPage;
+	}
+
+	@RequestMapping(value = "/status/{hangerId}")
+	public String status(@PathVariable("hangerId") Integer hangerId, ModelMap map) {
+		log.info("fetching hanger info by id");
+		Hanger hanger = hangerService.fetchHangerById(hangerId);
+		map.addAttribute("hangerForm", hanger);
+		return "Available";
+	}
+
+	@RequestMapping(value = "/availability", method = RequestMethod.POST)
+	public String updateStatus(@Validated @ModelAttribute("hangerForm") Hanger hanger, BindingResult result,
+			ModelMap map) {
+		hanger.setStatus("Alloted");
+
+		hangerService.updateHanger(hanger);
+		List<Hanger> hList = hangerService.fetchHanger();
+		map.addAttribute("hangerList", hList);
+		return "HangerDetails";
+
+	}
+
+	@RequestMapping(value = "/statusApprove", method = RequestMethod.GET)
+	public String approve(ModelMap map) {
+		log.info("Request inside fetch Form method");
+		List<Hanger> hList = hangerService.fetchHanger();
+		map.addAttribute("hangerList", hList);
+		return "Approve";
+	}
+
+	@RequestMapping(value = "/approve/{hangerId}")
+	public String approvedStatus(@PathVariable("hangerId") Integer hangerId, ModelMap map) {
+		log.info("fetching hanger info by id");
+		Hanger hanger = hangerService.fetchHangerById(hangerId);
+		map.addAttribute("hangerForm", hanger);
+		return "ApproveUpdate";
+	}
+
+	@RequestMapping(value = "/approvePendingStatus", method = RequestMethod.POST)
+	public String updatedStatus(@Validated @ModelAttribute("hangerForm") Hanger hanger, BindingResult result,
+			ModelMap map) {
+		hanger.setStatus("Alloted");
+		hanger.setApprove("Approved");
+		hangerService.updateHanger(hanger);
+		List<Hanger> hList = hangerService.fetchHanger();
+		map.addAttribute("hangerList", hList);
+		return "ApprovedDetails";
+
+	}
+
+
+}
+
+
+Manager.java
+
+package com.main.model;
+
+import javax.persistence.Entity;
+
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+import com.main.model.Gender;
+
+/**
+ * @author dhana.lakshmir Manager page
+ *
+ */
+@Entity
+@Table(name = "manager")
+public class Manager {
+	@Id
+	private Integer managerId;
+	@NotEmpty
+	@Size(min = 6, max = 15)
+	private String firstname;
+	@NotEmpty
+	private String lastname;
+	@NotEmpty
+	private String username;
+	@NotNull
+	@Min(value = 18)
+	@Max(value = 50)
+	private Integer age;
+	@Enumerated(EnumType.ORDINAL)
+	@NotNull
+	private Gender gender;
+	@NotEmpty
+	private String contactNumber;
+	@NotEmpty
+	private String password;
+
+	public Integer getManagerId() {
+		return managerId;
+	}
+
+	public void setManagerId(Integer managerId) {
+		this.managerId = managerId;
+	}
+
+	public String getFirstname() {
+		return firstname;
+	}
+
+	public void setFirstname(String firstname) {
+		this.firstname = firstname;
+	}
+
+	public String getLastname() {
+		return lastname;
+	}
+
+	public void setLastname(String lastname) {
+		this.lastname = lastname;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public Integer getAge() {
+		return age;
+	}
+
+	public void setAge(Integer age) {
+		this.age = age;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public String getContactNumber() {
+		return contactNumber;
+	}
+
+	public void setContactNumber(String contactNumber) {
+		this.contactNumber = contactNumber;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+}
+ 
+ManagerLogin.java
+
+package com.main.model;
+
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+/**
+ * @author dhana.lakshmir ManagerLogin page
+ */
+@Entity
+@Table(name = "managerlogin")
+public class ManagerLogin {
+	@NotEmpty
+	private String Username;
+	@NotEmpty
+	private String Password;
+
+	public String getUsername() {
+		return Username;
+	}
+
+	public void setUsername(String username) {
+		this.Username = username;
+	}
+
+	public String getPassword() {
+		return Password;
+	}
+
+	public void setPassword(String password) {
+		this.Password = password;
+	}
+}
+
+Hanger.java
+
+package com.main.model;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+/**
+ * @author dhana.lakshmir Hanger Page
+ */
+@Entity
+@Table(name = "hanger100")
+public class Hanger {
+	@Id
+	private Integer hangerId;
+	@NotEmpty
+	private String destination;
+
+	private String status;
+	private Integer planeid;
+	private String approve;
+
+	public String getApprove() {
+		return approve;
+	}
+
+	public void setApprove(String approve) {
+		this.approve = approve;
+	}
+
+	public Integer getPlaneid() {
+		return planeid;
+	}
+
+	public void setPlaneid(Integer planeid) {
+		this.planeid = planeid;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public Integer getHangerId() {
+		return hangerId;
+	}
+
+	public void setHangerId(Integer hangerId) {
+		this.hangerId = hangerId;
+	}
+
+	public String getDestination() {
+		return destination;
+	}
+
+	public void setDestination(String destination) {
+		this.destination = destination;
+	}
+
+}
+
+Pilot.java
+
+package com.main.model;
+
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+/**
+ * @author dhana.lakshmir Pilot Page
+ */
+@Entity
+@Table(name = "pilot")
+public class Pilot {
+	@Id
+	private Integer pilotid;
+	@NotEmpty
+	private String firstname;
+	@NotEmpty
+	private String lastname;
+	@NotNull
+	@Min(value = 18)
+	@Max(value = 50)
+	private Integer age;
+	@Enumerated(EnumType.ORDINAL)
+	@NotNull
+	private Gender gender;
+	@NotNull
+	private Long contactNumber;
+
+	public Integer getPilotid() {
+		return pilotid;
+	}
+
+	public void setPilotid(Integer pilotid) {
+		this.pilotid = pilotid;
+	}
+
+	public String getFirstname() {
+		return firstname;
+	}
+
+	public void setFirstname(String firstname) {
+		this.firstname = firstname;
+	}
+
+	public String getLastname() {
+		return lastname;
+	}
+
+	public void setLastname(String lastname) {
+		this.lastname = lastname;
+	}
+
+	public Integer getAge() {
+		return age;
+	}
+
+	public void setAge(Integer age) {
+		this.age = age;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public Long getContactNumber() {
+		return contactNumber;
+	}
+
+	public void setContactNumber(Long contactNumber) {
+		this.contactNumber = contactNumber;
+	}
+
+}
+
+Plane.java
+package com.main.model;
+
+import javax.persistence.Entity;
+
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+/**
+ * @author dhana.lakshmir Pilot Page
+ *
+ */
+@Entity
+@Table(name = "plane")
+public class Plane {
+
+	@Id
+	private Integer planeid;
+	@NotEmpty
+	private String planename;
+	@NotNull
+	private Integer seats;
+	@NotEmpty
+	private String type;
+
+	public Integer getPlaneid() {
+		return planeid;
+	}
+
+	public void setPlaneid(Integer planeid) {
+		this.planeid = planeid;
+	}
+
+	public String getPlanename() {
+		return planename;
+	}
+
+	public void setPlanename(String planename) {
+		this.planename = planename;
+	}
+
+	public Integer getSeats() {
+		return seats;
+	}
+
+	public void setSeats(Integer seats) {
+		this.seats = seats;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+}
+
+Admin.java
+package com.main.model;
+
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+import org.hibernate.validator.constraints.NotEmpty;
+
+/**
+ * @author dhana.lakshmir Admin Page
+ *
+ */
+@Entity
+@Table(name = "admin")
+public class Admin {
+	@NotEmpty
+	private String Username;
+	@NotEmpty
+	private String Password;
+
+	public String getUsername() {
+		return Username;
+	}
+
+	public void setUsername(String username) {
+		this.Username = username;
+	}
+
+	public String getPassword() {
+		return Password;
+	}
+
+	public void setPassword(String password) {
+		this.Password = password;
+	}
+
+}
+
+ManagerRegister.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="UTF-8"%>
+<%@taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Manager Register</title>
+<!-- Manager Register page -->
+<style>
+table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+th, td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+	background-color: #f5f5f5;
+}
+
+div {
+	background-color: lightblue;
+}
+</style>
+</head>
+<body>
+	<div class="div">
+		<center>
+			<h1 style="border: 2px solid Violet;">Register Your Details</h1>
+		</center>
+	</div>
+	<form:form action="/AirportManagementSystem_SpringMVC/saveManager"
+		method="post" commandName="managerForm" novalidate="novalidate">
+		<table class=table border="1">
+			<tr>
+				<th>Manager FirstName:</th>
+				<td><form:input path="firstname" /><font color="red"><form:errors
+							path="firstname" /></font></td>
+			</tr>
+			<tr>
+				<th>Manager LastName:</th>
+				<td><form:input path="lastname" /><font color="red"><form:errors
+							path="lastname" /></font></td>
+			</tr>
+			<tr>
+				<th>UserName:</th>
+				<td><form:input path="username" /><font color="red"><form:errors
+							path="username" /></font></td>
+			</tr>
+			<tr>
+				<th>Age</th>
+				<td><form:input path="age" /><font color="red"><form:errors
+							path="age"></form:errors></font></td>
+			</tr>
+
+			<tr>
+				<th><form:label path="gender">Gender</form:label><font
+					color="red"><form:errors path="gender" /></font></th>
+				<td><form:radiobutton path="gender" value="MALE" label="Male" />
+					<form:radiobutton path="gender" value="FEMALE" label="Female" /> <form:radiobutton
+						path="gender" value="OTHER" label="Other" /></td>
+			</tr>
+			<tr>
+				<th>ContactNumber</th>
+				<td><form:input path="contactNumber" /><font color="red"><form:errors
+							path="contactNumber"></form:errors></font></td>
+			</tr>
+			<tr>
+				<th>Password</th>
+				<td><form:input type="Password" path="password" /><font
+					color="red"><form:errors path="password"></form:errors></font></td>
+			</tr>
+
+			<tr>
+				<td colspan="2"><center>
+						<input type="submit" value="Register" />
+					</center></td>
+			</tr>
+		</table>
+	</form:form>
+</body>
+</html>
